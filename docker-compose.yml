@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - '8000:8000'
+    volumes:
+      - .:/opt/app
+    command: uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+    env_file:
+      - .env
+    depends_on:
+      - db
+  db:
+    image: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    command: ['postgres', '-c', 'log_statement=all', '-c', 'log_destination=stderr']
+  pgadmin:
+    restart: always
+    image: dpage/pgadmin4
+    container_name: pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin4
+    ports:
+      - '5050:80'
+    depends_on:
+      - db
+
+  tests:
+    build: .
+    volumes:
+      - .:/opt/app
+    command: pytest -vv -s
+    env_file:
+      - .env.test
+    depends_on:
+      - test-db
+  test-db:
+    image: postgres
+    ports:
+      - "15432:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
